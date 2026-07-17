@@ -1,19 +1,15 @@
-package tankfight.game;
+package tankfight.view;
 
 import javax.swing.JFrame;
-import javax.swing.SwingUtilities;
 
 public class GameWindow extends JFrame {
 
-    public GameWindow() {
+    public GameWindow(GamePanel gamePanel) {
         super("Tank Fight");
-        GamePanel gamePanel = new GamePanel();
         add(gamePanel);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setResizable(false);
         pack();
         setLocationRelativeTo(null);
-        setVisible(true);
-        SwingUtilities.invokeLater(gamePanel::requestFocusInWindow);
     }
 }

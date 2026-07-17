@@ -1,4 +1,4 @@
-package tankfight.util;
+package tankfight.model;
 
 public enum Direction {
     UP(0, -1),
