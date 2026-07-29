@@ -31,3 +31,4 @@ bin/
 
 ### Vendored test dependencies ###
 lib/*.jar
+/out-test/
