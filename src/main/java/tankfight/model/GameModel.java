@@ -46,9 +46,9 @@ public class GameModel {
             return;
         }
 
+        updateBullets();
         applyAction(player1, player2, player1Action, now);
         applyAction(player2, player1, player2Action, now);
-        updateBullets();
         checkGameOver();
     }
 
@@ -105,8 +105,10 @@ public class GameModel {
             }
 
             Tank target = bullet.getOwner() == Player.ONE ? player2 : player1;
-            if (target.isAlive() && bounds.intersects(target.getBounds())) {
-                target.takeDamage(bullet.getDamage());
+            if (bounds.intersects(target.getBounds())) {
+                if (target.isAlive()) {
+                    target.takeDamage(bullet.getDamage());
+                }
                 it.remove();
             }
         }
