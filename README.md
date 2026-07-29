@@ -11,11 +11,11 @@ A local 2-player tank battle game built with Java Swing.
 Clone the repo, then from the project root:
 
 ```bash
-javac -d out $(find src/main/java -name "*.java")
+javac -d out $(find src/main/java -name "*.java") && cp -r src/main/resources/* out/
 java -cp out tankfight.Main
 ```
 
-This compiles all sources into `out/` and launches the game window.
+This compiles all sources into `out/`, copies the tank/wall/bullet sprite images onto the classpath, and launches the game window.
 
 ## Running the tests
 

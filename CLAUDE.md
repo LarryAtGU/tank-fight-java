@@ -10,7 +10,7 @@ TankFight is an IntelliJ IDEA-managed Java project (JDK 25) for a local 2-player
 
 There is no Maven/Gradle wrapper — this is a plain IntelliJ module (`TankFight.iml`) using the Maven-style `src/main/java` / `src/test/java` directory convention, built with plain `javac`/`java`.
 
-- Compile: `javac -d out $(find src/main/java -name "*.java")`
+- Compile: `javac -d out $(find src/main/java -name "*.java") && cp -r src/main/resources/* out/`
 - Run: `java -cp out tankfight.Main`
 - Tests use JUnit 5 (Jupiter), vendored as a standalone jar (not committed — gitignored via `lib/*.jar`; fetch it with the curl command in `README.md`) rather than pulled via a build tool:
   ```
@@ -23,13 +23,13 @@ There is no Maven/Gradle wrapper — this is a plain IntelliJ module (`TankFight
 **`tankfight.model`** — pure game state and rules, no Swing/AWT-rendering dependency (only `java.awt.Rectangle` for geometry, which is headless-safe).
 - `Entity` (abstract) — base class for anything with position/size (`x`, `y`, `width`, `height`, `getBounds()`); `setPosition` is package-private so only `GameModel` (same package) can move entities.
 - `Movable` / `Damageable` (interfaces) — `Tank` implements both; `Bullet` implements `Movable` only.
-- `Tank`, `Bullet`, `Wall` — entities. `Tank` holds a `Player` (`ONE`/`TWO`), not a `Color` — rendering color is a view concern, decided in `GameRenderer`.
+- `Tank`, `Bullet`, `Wall` — entities. `Tank` holds a `Player` (`ONE`/`TWO`), not a `Color`/sprite — rendering is a view concern, decided in `GameRenderer`.
 - `PlayerAction` (record) — one tick's input intent for one player (`moveDirection` nullable, `fire` boolean); this is the sole channel through which the controller talks to the model.
 - `GameModel` — owns both tanks, the wall layout, and the live bullet list; `update(PlayerAction, PlayerAction, long now)` runs one tick of movement/collision/firing/win-condition logic. This is the class most worth unit-testing directly, since it has no Swing dependency.
 
 **`tankfight.view`** — rendering only, takes a `GameModel` and draws it; never mutates game state.
 - `GameView` (interface) — `void refresh()`, the abstraction the controller uses to trigger a repaint without depending on Swing directly.
-- `GameRenderer` (package-private) — draws walls/bullets/tanks/HUD/game-over overlay onto a `Graphics2D`, given a `GameModel`. Owns the player→color mapping.
+- `GameRenderer` (package-private) — draws walls/bullets/tanks/HUD/game-over overlay onto a `Graphics2D`, given a `GameModel`. Owns the player→sprite mapping and loads tank/wall/bullet PNGs from `src/main/resources/images` via classpath (`getResourceAsStream("/images/...")`) — the compile command copies that directory into `out/` so the resources are on the runtime classpath.
 - `GamePanel` — `JPanel implements GameView`; delegates `paintComponent` to `GameRenderer`.
 - `GameWindow` — `JFrame` wrapper; does not call `setVisible(true)` itself, that's left to the composition root.
 

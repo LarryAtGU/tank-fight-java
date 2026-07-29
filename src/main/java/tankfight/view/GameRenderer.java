@@ -6,15 +6,35 @@ import tankfight.model.Player;
 import tankfight.model.Tank;
 import tankfight.model.Wall;
 
+import javax.imageio.ImageIO;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.FontMetrics;
 import java.awt.Graphics2D;
+import java.awt.Rectangle;
 import java.awt.RenderingHints;
+import java.awt.TexturePaint;
+import java.awt.image.BufferedImage;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.UncheckedIOException;
 
 class GameRenderer {
-    private static final Color PLAYER_ONE_COLOR = new Color(70, 130, 220);
-    private static final Color PLAYER_TWO_COLOR = new Color(220, 70, 70);
+    private static final BufferedImage TANK_BLUE = loadImage("tank_blue.png");
+    private static final BufferedImage TANK_RED = loadImage("tank_red.png");
+    private static final BufferedImage WALL_TILE = loadImage("wall.png");
+    private static final BufferedImage BULLET_IMAGE = loadImage("bullet.png");
+
+    private static BufferedImage loadImage(String name) {
+        try (InputStream in = GameRenderer.class.getResourceAsStream("/images/" + name)) {
+            if (in == null) {
+                throw new IOException("Missing image resource: /images/" + name);
+            }
+            return ImageIO.read(in);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
 
     void render(Graphics2D g2, GameModel model) {
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
@@ -31,20 +51,21 @@ class GameRenderer {
         }
     }
 
-    private Color colorOf(Player player) {
-        return player == Player.ONE ? PLAYER_ONE_COLOR : PLAYER_TWO_COLOR;
+    private BufferedImage tankImageOf(Player player) {
+        return player == Player.ONE ? TANK_BLUE : TANK_RED;
     }
 
     private void drawWall(Graphics2D g2, Wall wall) {
-        g2.setColor(new Color(120, 120, 120));
-        g2.fillRect(wall.getX(), wall.getY(), wall.getWidth(), wall.getHeight());
-        g2.setColor(Color.DARK_GRAY);
-        g2.drawRect(wall.getX(), wall.getY(), wall.getWidth(), wall.getHeight());
+        Graphics2D g = (Graphics2D) g2.create();
+        int tile = WALL_TILE.getWidth();
+        // Anchor the texture at the world origin so adjacent wall segments tile seamlessly.
+        g.setPaint(new TexturePaint(WALL_TILE, new Rectangle(0, 0, tile, tile)));
+        g.fillRect(wall.getX(), wall.getY(), wall.getWidth(), wall.getHeight());
+        g.dispose();
     }
 
     private void drawBullet(Graphics2D g2, Bullet bullet) {
-        g2.setColor(Color.YELLOW);
-        g2.fillOval(bullet.getX(), bullet.getY(), bullet.getWidth(), bullet.getHeight());
+        g2.drawImage(BULLET_IMAGE, bullet.getX(), bullet.getY(), bullet.getWidth(), bullet.getHeight(), null);
     }
 
     private void drawTank(Graphics2D g2, Tank tank) {
@@ -63,14 +84,8 @@ class GameRenderer {
         };
         g.rotate(angle, cx, cy);
 
-        Color color = colorOf(tank.getPlayer());
-        g.setColor(color.darker());
-        g.fillRect(cx - 4, y - 8, 8, size / 2 + 8);
-
-        g.setColor(color);
-        g.fillRoundRect(x, y, size, size, 8, 8);
-        g.setColor(Color.BLACK);
-        g.drawRoundRect(x, y, size, size, 8, 8);
+        BufferedImage sprite = tankImageOf(tank.getPlayer());
+        g.drawImage(sprite, x, y, size, size, null);
 
         g.dispose();
     }
