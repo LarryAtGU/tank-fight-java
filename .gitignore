@@ -32,3 +32,6 @@ bin/
 ### Vendored test dependencies ###
 lib/*.jar
 /out-test/
+
+### JVM crash logs ###
+hs_err_*
