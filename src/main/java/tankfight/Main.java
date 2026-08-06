@@ -25,7 +25,8 @@ public class Main {
                     KeyEvent.VK_UP, KeyEvent.VK_DOWN, KeyEvent.VK_LEFT, KeyEvent.VK_RIGHT, KeyEvent.VK_ENTER);
 
             GameController controller = new GameController(
-                    model, panel, input, player1Bindings, player2Bindings, KeyEvent.VK_R);
+                    model, panel, input, player1Bindings, player2Bindings,
+                    KeyEvent.VK_R, KeyEvent.VK_M, KeyEvent.VK_ESCAPE);
 
             GameWindow window = new GameWindow(panel);
             window.setVisible(true);

@@ -3,7 +3,6 @@ package tankfight.view;
 import tankfight.model.GameModel;
 
 import javax.swing.JPanel;
-import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
@@ -14,8 +13,9 @@ public class GamePanel extends JPanel implements GameView {
 
     public GamePanel(GameModel model) {
         this.model = model;
-        setPreferredSize(new Dimension(GameModel.WIDTH, GameModel.HEIGHT));
-        setBackground(new Color(30, 60, 30));
+        // Taller than the play field: the renderer puts the HUD in a strip underneath it.
+        setPreferredSize(new Dimension(GameRenderer.PANEL_WIDTH, GameRenderer.PANEL_HEIGHT));
+        setBackground(GameRenderer.FIELD_COLOR);
         setFocusable(true);
     }
 

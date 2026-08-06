@@ -8,10 +8,16 @@ import java.util.Set;
 public class KeyboardInput implements InputSource, KeyListener {
 
     private final Set<Integer> pressedKeys = new HashSet<>();
+    private final Set<Integer> freshPresses = new HashSet<>();
 
     @Override
     public boolean isPressed(int keyCode) {
         return pressedKeys.contains(keyCode);
+    }
+
+    @Override
+    public boolean consumePress(int keyCode) {
+        return freshPresses.remove(keyCode);
     }
 
     @Override
@@ -21,7 +27,11 @@ public class KeyboardInput implements InputSource, KeyListener {
 
     @Override
     public void keyPressed(KeyEvent e) {
-        pressedKeys.add(e.getKeyCode());
+        // add() is false when the key was already down, which filters out OS key-repeat and
+        // keeps freshPresses to one entry per real press.
+        if (pressedKeys.add(e.getKeyCode())) {
+            freshPresses.add(e.getKeyCode());
+        }
     }
 
     @Override

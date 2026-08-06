@@ -6,10 +6,12 @@ public class Bullet extends Entity implements Movable {
     private static final int DAMAGE = 20;
 
     private final Direction direction;
+    private final Side side;
     private final Player owner;
 
-    public Bullet(Player owner, int x, int y, Direction direction) {
+    public Bullet(Side side, Player owner, int x, int y, Direction direction) {
         super(x, y, SIZE, SIZE);
+        this.side = side;
         this.owner = owner;
         this.direction = direction;
     }
@@ -24,6 +26,12 @@ public class Bullet extends Entity implements Movable {
         return SPEED;
     }
 
+    /** The team that fired this bullet; it can only damage tanks of the other side. */
+    public Side getSide() {
+        return side;
+    }
+
+    /** The player credited with kills by this bullet, or {@code null} for enemy fire. */
     public Player getOwner() {
         return owner;
     }
