@@ -66,18 +66,24 @@ public class GameModel {
     public GameModel(Random random, TankAi enemyAi) {
         this.random = random;
         this.enemyAi = enemyAi;
-        initWalls();
+        buildWalls(config.level());
     }
 
-    private void initWalls() {
-        walls.add(new Wall(0, 0, WIDTH, 10));
-        walls.add(new Wall(0, HEIGHT - 10, WIDTH, 10));
-        walls.add(new Wall(0, 0, 10, HEIGHT));
-        walls.add(new Wall(WIDTH - 10, 0, 10, HEIGHT));
+    /**
+     * Lays out the indestructible border plus the level's brick, replacing whatever the previous
+     * round left standing. Brick damage therefore lasts for one round only: replaying a level
+     * rebuilds its maze intact.
+     */
+    private void buildWalls(int level) {
+        walls.clear();
 
-        walls.add(new Wall(WIDTH / 2 - 60, HEIGHT / 2 - 10, 120, 20));
-        walls.add(new Wall(200, 150, 20, 150));
-        walls.add(new Wall(WIDTH - 220, HEIGHT - 300, 20, 150));
+        int thickness = Wall.BORDER_THICKNESS;
+        walls.add(Wall.border(0, 0, WIDTH, thickness));
+        walls.add(Wall.border(0, HEIGHT - thickness, WIDTH, thickness));
+        walls.add(Wall.border(0, 0, thickness, HEIGHT));
+        walls.add(Wall.border(WIDTH - thickness, 0, thickness, HEIGHT));
+
+        walls.addAll(Maze.forLevel(level).buildBricks());
     }
 
     /**
@@ -96,6 +102,7 @@ public class GameModel {
     public void startRound(RoundConfig config) {
         this.config = config;
 
+        buildWalls(config.level());
         bullets.clear();
         allies.clear();
         enemies.clear();
@@ -224,7 +231,7 @@ public class GameModel {
                 continue;
             }
 
-            if (hitsWall(bounds)) {
+            if (hitWall(bounds, bullet.getDamage())) {
                 it.remove();
                 continue;
             }
@@ -240,13 +247,45 @@ public class GameModel {
         }
     }
 
-    private boolean hitsWall(Rectangle bounds) {
+    /**
+     * Resolves a bullet against the terrain, returning whether the bullet is used up.
+     *
+     * <p>A bullet is 8px and a brick tile is 20px, so a shot can overlap two tiles — but it
+     * damages exactly one. The tile chosen is the intersected one with the smallest y, and among
+     * equal y the smallest x, so two builds dig the same holes from the same shots. A tile out of
+     * hit points leaves the field at once, opening the gap for tanks and bullets alike.
+     */
+    private boolean hitWall(Rectangle bounds, int damage) {
+        Wall brick = null;
+        boolean hitBorder = false;
+
         for (Wall wall : walls) {
-            if (bounds.intersects(wall.getBounds())) {
-                return true;
+            if (!bounds.intersects(wall.getBounds())) {
+                continue;
+            }
+            if (!wall.isDestructible()) {
+                hitBorder = true;
+            } else if (brick == null || isFurtherUpAndLeft(wall, brick)) {
+                brick = wall;
             }
         }
-        return false;
+
+        if (brick != null) {
+            brick.takeDamage(damage);
+            if (!brick.isAlive()) {
+                walls.remove(brick);
+            }
+            return true;
+        }
+        return hitBorder;
+    }
+
+    /** The tie-break for a bullet straddling two tiles: smallest y first, then smallest x. */
+    private static boolean isFurtherUpAndLeft(Wall candidate, Wall best) {
+        if (candidate.getY() != best.getY()) {
+            return candidate.getY() < best.getY();
+        }
+        return candidate.getX() < best.getX();
     }
 
     /**
@@ -369,6 +408,7 @@ public class GameModel {
         return Collections.unmodifiableList(enemies);
     }
 
+    /** The terrain still standing: the border plus the level's undestroyed brick. */
     public List<Wall> getWalls() {
         return Collections.unmodifiableList(walls);
     }

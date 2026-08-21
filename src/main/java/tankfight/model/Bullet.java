@@ -2,8 +2,10 @@ package tankfight.model;
 
 public class Bullet extends Entity implements Movable {
     public static final int SIZE = 8;
-    private static final int SPEED = 7;
-    private static final int DAMAGE = 20;
+    /** Pixels travelled per tick. */
+    public static final int SPEED = 7;
+    /** Damage dealt to a tank, and to a brick tile, on impact. */
+    public static final int DAMAGE = 20;
 
     private final Direction direction;
     private final Side side;

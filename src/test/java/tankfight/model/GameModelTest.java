@@ -431,4 +431,138 @@ class GameModelTest {
         model.update(PlayerAction.NONE, PlayerAction.NONE, START + interval * 2);
         assertEquals(2, model.getEnemies().size());
     }
+
+    // --- terrain ------------------------------------------------------------------------------
+
+    @Test
+    void eachLevelIsPlayedOnItsOwnMaze() {
+        GameModel model = quietModel();
+
+        model.getSetup().setLevel(RoundConfig.MIN_LEVEL);
+        model.startRound();
+        assertEquals(BORDER_SEGMENTS + Maze.OPEN_FIELD.buildBricks().size(), model.getWalls().size());
+
+        model.getSetup().setLevel(RoundConfig.MAX_LEVEL);
+        model.startRound();
+        assertEquals(BORDER_SEGMENTS + Maze.LABYRINTH.buildBricks().size(), model.getWalls().size(),
+                "the maze should be rebuilt for the level being played");
+    }
+
+    @Test
+    void aBulletStraddlingTwoTilesDamagesTheOneFurthestUpAndLeft() {
+        GameModel model = startedModel();
+
+        // The shot spans the tiles at x = 380 and x = 400 in Open Field's centre block.
+        fireAt(model, 380, 340, Direction.UP, 1, START);
+
+        assertEquals(Wall.BRICK_HIT_POINTS - Bullet.DAMAGE, brickAt(model, 380, 280).getHealth());
+        assertEquals(Wall.BRICK_HIT_POINTS, brickAt(model, 400, 280).getHealth(),
+                "exactly one tile takes the damage, and it is the smaller x of the two");
+        assertTrue(model.getBullets().isEmpty(), "the bullet is used up on the brick");
+    }
+
+    @Test
+    void twoHitsDestroyABrickTileAndTakeItOffTheField() {
+        GameModel model = startedModel();
+        int walls = model.getWalls().size();
+
+        fireAt(model, 380, 340, Direction.UP, 2, START);
+
+        assertNull(brickAt(model, 380, 280), "a tile out of hit points leaves the field");
+        assertEquals(walls - 1, model.getWalls().size());
+    }
+
+    @Test
+    void enemyGunfireChewsThroughBrickJustTheSame() {
+        GameModel model = modelWithEnemies(1, TRIGGER_HAPPY);
+        placeEnemies(model, new int[]{380, 220});
+
+        idle(model, 20, START);
+
+        assertTrue(brickAt(model, 380, 280).getHealth() < Wall.BRICK_HIT_POINTS,
+                "sides matter for tanks, never for walls");
+    }
+
+    @Test
+    void theBorderShrugsOffEverythingAndStillStopsBullets() {
+        GameModel model = startedModel();
+        int walls = model.getWalls().size();
+
+        fireAt(model, 380, 500, Direction.DOWN, 4, START);
+
+        assertEquals(walls, model.getWalls().size(), "no part of the border can be shot away");
+        assertTrue(model.getBullets().isEmpty(), "the border still swallows the bullet");
+    }
+
+    @Test
+    void tanksDriveThroughAHoleShotInTheMaze() {
+        GameModel model = startedModel();
+        Tank p1 = model.getPlayer1();
+        long now = START;
+
+        // Open Field's left pillar stands at x = 200; a 40px tank needs two tiles gone to pass.
+        p1.setPosition(100, 180);
+        now = drive(model, Direction.RIGHT, 60, now);
+        assertEquals(160, p1.getX(), "the pillar should stop the tank short of x = 200");
+
+        now = fireAt(model, 100, 168, Direction.RIGHT, 2, now);
+        now = fireAt(model, 100, 188, Direction.RIGHT, 2, now);
+        assertNull(brickAt(model, 200, 180));
+        assertNull(brickAt(model, 200, 200));
+
+        p1.setPosition(100, 180);
+        drive(model, Direction.RIGHT, 60, now);
+
+        assertTrue(p1.getX() > 220, "the tank should drive straight through the gap it made");
+    }
+
+    @Test
+    void restartingARoundRebuildsTheMazeIntact() {
+        GameModel model = startedModel();
+        int walls = model.getWalls().size();
+        fireAt(model, 380, 340, Direction.UP, 2, START);
+        assertEquals(walls - 1, model.getWalls().size());
+
+        model.reset();
+
+        assertEquals(walls, model.getWalls().size(), "brick damage lasts for the round only");
+        assertEquals(Wall.BRICK_HIT_POINTS, brickAt(model, 380, 280).getHealth());
+    }
+
+    /** How many indestructible segments make up the field border. */
+    private static final int BORDER_SEGMENTS = 4;
+
+    /** The brick tile whose corner is at {@code (x, y)}, or {@code null} if it has been shot away. */
+    private static Wall brickAt(GameModel model, int x, int y) {
+        for (Wall wall : model.getWalls()) {
+            if (wall.isDestructible() && wall.getX() == x && wall.getY() == y) {
+                return wall;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Parks player one at {@code (x, y)} facing {@code facing} and fires {@code shots} shells,
+     * letting each one land before the next. Re-parking between shots keeps the aim exact.
+     */
+    private static long fireAt(GameModel model, int x, int y, Direction facing, int shots, long now) {
+        Tank p1 = model.getPlayer1();
+        for (int i = 0; i < shots; i++) {
+            p1.setPosition(x, y);
+            p1.setDirection(facing);
+            model.update(new PlayerAction(null, true), PlayerAction.NONE, now);
+            now = idle(model, 20, now + TICK_MS) + Tank.ALLY_FIRE_COOLDOWN_MS;
+        }
+        return now;
+    }
+
+    /** Drives player one in {@code direction} for {@code ticks}, returning the time reached. */
+    private static long drive(GameModel model, Direction direction, int ticks, long now) {
+        for (int i = 0; i < ticks; i++) {
+            model.update(new PlayerAction(direction, false), PlayerAction.NONE, now);
+            now += TICK_MS;
+        }
+        return now;
+    }
 }

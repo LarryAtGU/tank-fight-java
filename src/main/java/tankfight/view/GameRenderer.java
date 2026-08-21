@@ -35,7 +35,7 @@ class GameRenderer {
     static final int PANEL_HEIGHT = GameModel.HEIGHT + HUD_HEIGHT;
 
     static final Color FIELD_COLOR = new Color(30, 60, 30);
-    private static final Color HUD_COLOR = new Color(18, 18, 22);
+    private static final Color HUD_COLOR = new Color(18, 18, 26);
     private static final Color ACCENT = new Color(255, 205, 70);
     private static final Color MUTED = new Color(150, 150, 160);
     private static final Color HEALTH_GOOD = new Color(80, 200, 90);
@@ -58,6 +58,9 @@ class GameRenderer {
     private static final BufferedImage TANK_GREEN = recolor(TANK_BLUE, PLAYER_TWO_HUE);
     private static final BufferedImage WALL_TILE = loadImage("wall.png");
     private static final BufferedImage BULLET_IMAGE = loadImage("bullet.png");
+
+    private static final TexturePaint WALL_PAINT = new TexturePaint(
+            WALL_TILE, new Rectangle(0, 0, WALL_TILE.getWidth(), WALL_TILE.getHeight()));
 
     private static BufferedImage loadImage(String name) {
         try (InputStream in = GameRenderer.class.getResourceAsStream("/images/" + name)) {
@@ -101,7 +104,7 @@ class GameRenderer {
         g2.setColor(FIELD_COLOR);
         g2.fillRect(0, 0, GameModel.WIDTH, GameModel.HEIGHT);
 
-        for (Wall wall : model.getWalls()) drawWall(g2, wall);
+        drawWalls(g2, model.getWalls());
         for (Bullet bullet : model.getBullets()) drawBullet(g2, bullet);
 
         // Every sprite first, then every bar, so a tank driving past a neighbour can't cover
@@ -135,12 +138,18 @@ class GameRenderer {
         return tank.getPlayer() == Player.ONE ? TANK_BLUE : TANK_GREEN;
     }
 
-    private void drawWall(Graphics2D g2, Wall wall) {
+    /**
+     * Paints the border and every brick tile still standing. One shared texture pass covers the
+     * lot: a dense maze is a hundred-odd tiles, and they all draw from the same anchored paint,
+     * so neighbouring tiles line up as one continuous wall.
+     */
+    private void drawWalls(Graphics2D g2, List<Wall> walls) {
         Graphics2D g = (Graphics2D) g2.create();
-        int tile = WALL_TILE.getWidth();
         // Anchor the texture at the world origin so adjacent wall segments tile seamlessly.
-        g.setPaint(new TexturePaint(WALL_TILE, new Rectangle(0, 0, tile, tile)));
-        g.fillRect(wall.getX(), wall.getY(), wall.getWidth(), wall.getHeight());
+        g.setPaint(WALL_PAINT);
+        for (Wall wall : walls) {
+            g.fillRect(wall.getX(), wall.getY(), wall.getWidth(), wall.getHeight());
+        }
         g.dispose();
     }
 
